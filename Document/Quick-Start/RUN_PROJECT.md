@@ -44,7 +44,7 @@ uvicorn app.main:app --reload
 ### **Terminal 2: Frontend**
 ```powershell
 cd "C:\Big_Data\AI\Final Term\FrontEnd\story-generator"
-npm run dev
+npx vite --host
 ```
 
 ### **Browser**
@@ -118,7 +118,7 @@ curl http://localhost:8000/health
 cd "C:\Big_Data\AI\Final Term\FrontEnd\story-generator"
 
 # 2. Start dev server
-npm run dev
+npx vite --host
 ```
 
 **Expected output:**
@@ -333,13 +333,7 @@ uvicorn app.main:app --reload --port 8001
 
 ```powershell
 # Instead of:
-npm run dev
-
-# Run on different port (e.g., 5175):
-npm run dev -- --port 5175
-
-# Access at: http://localhost:5175
-```
+npx vite
 
 ### **Run Frontend Build**
 
@@ -445,7 +439,7 @@ uvicorn app.main:app --reload
 
 # Terminal 2: Frontend (new terminal)
 cd "C:\Big_Data\AI\Final Term\FrontEnd\story-generator"
-npm run dev
+npx vite --host
 
 # Browser (3rd window)
 # Open http://localhost:5174

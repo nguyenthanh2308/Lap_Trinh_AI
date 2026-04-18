@@ -69,7 +69,7 @@ class ModelLoader:
     @staticmethod
     def load_model(model_folder: str, device: str = None):
         """
-        Load tokenizer and model from local folder
+        Load tokenizer and model from local folder or fallback to pretrained
         
         Args:
             model_folder: Path to fine-tuned model folder
@@ -77,46 +77,45 @@ class ModelLoader:
             
         Returns:
             Tuple of (tokenizer, model, device) or (None, None, device) if failed
-            
-        Raises:
-            ValueError: If model folder validation fails
         """
         try:
-            # Validate model folder
-            if not ModelLoader.validate_model_folder(model_folder):
-                raise ValueError(f"Invalid model folder: {model_folder}")
-            
             # Auto-detect device if not specified
             if device is None:
                 device = ModelLoader.detect_device()
             
-            logger.info(f"Loading model from: {model_folder}")
-            logger.info(f"Using device: {device}")
-            
-            # Load tokenizer
-            logger.info("Loading tokenizer...")
-            tokenizer = AutoTokenizer.from_pretrained(model_folder)
+            # Try to load from local folder first
+            if ModelLoader.validate_model_folder(model_folder):
+                logger.info(f"Loading model from local folder: {model_folder}")
+                tokenizer = AutoTokenizer.from_pretrained(model_folder)
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_folder,
+                    torch_dtype=torch.float32 if device == "cpu" else torch.float16
+                )
+            else:
+                # Fallback to pretrained model from Hugging Face
+                logger.warning(f"Local model folder not found, using fallback model")
+                pretrained_model = "gpt2"  # Lightweight model for story generation
+                logger.info(f"Loading pretrained model: {pretrained_model}")
+                
+                tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
+                model = AutoModelForCausalLM.from_pretrained(
+                    pretrained_model,
+                    torch_dtype=torch.float32 if device == "cpu" else torch.float16
+                )
+                logger.info(f"✅ Loaded fallback model: {pretrained_model}")
             
             # Set pad token if not set
             if tokenizer.pad_token is None:
                 tokenizer.pad_token = tokenizer.eos_token
                 logger.info("Pad token set to EOS token")
             
-            # Load model
-            logger.info("Loading model...")
-            model = AutoModelForCausalLM.from_pretrained(
-                model_folder,
-                torch_dtype=torch.float32 if device == "cpu" else torch.float16
-            )
+            # Move model to device and set to eval mode
             model.to(device)
             model.eval()
             
-            logger.info("✅ Model and tokenizer loaded successfully!")
+            logger.info(f"✅ Model and tokenizer loaded successfully on device: {device}")
             return tokenizer, model, device
         
-        except FileNotFoundError as e:
-            logger.error(f"Model files not found: {str(e)}")
-            raise ValueError(f"Model files not found in {model_folder}") from e
         except Exception as e:
             logger.error(f"Error loading model: {str(e)}")
             raise
