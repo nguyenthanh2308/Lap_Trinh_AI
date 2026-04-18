@@ -1,24 +1,25 @@
 import logging
 from typing import Dict
+from app.models.schema import StoryRequest
 
 logger = logging.getLogger(__name__)
 
 
-def construct_prompt(data: Dict[str, str]) -> str:
+def build_prompt(request: StoryRequest) -> str:
     """
-    Construct a prompt from the request data
+    Build a formatted Vietnamese prompt from StoryRequest model.
     
     Args:
-        data: Dictionary containing name, personality, setting, theme
+        request: StoryRequest containing name, personality, setting, theme
         
     Returns:
-        Formatted prompt string
+        Formatted prompt string in Vietnamese
     """
     prompt = (
-        f"Nhân vật: {data['name']} | "
-        f"Tính cách: {data['personality']} | "
-        f"Bối cảnh: {data['setting']} | "
-        f"Chủ đề: {data['theme']}. Câu chuyện: "
+        f"Nhân vật: {request.name} | "
+        f"Tính cách: {request.personality} | "
+        f"Bối cảnh: {request.setting} | "
+        f"Chủ đề: {request.theme}. Truyện: "
     )
     return prompt
 

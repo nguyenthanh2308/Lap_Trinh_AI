@@ -133,20 +133,44 @@ Environment variables (in `.env`):
 
 ## Development Notes
 
+### Loading Fine-tuned Models
+
+1. **Place your model in `./fine_tuned_model` folder:**
+   ```
+   backend/
+   ├── fine_tuned_model/
+   │   ├── config.json
+   │   ├── pytorch_model.bin
+   │   ├── tokenizer.json
+   │   └── ...
+   ```
+
+2. **The server automatically:**
+   - Detects GPU (CUDA) availability
+   - Loads model on startup (before accepting requests)
+   - Stores in `app.state` for fast access
+   - Handles errors gracefully
+
+3. **See `MODEL_LOADING_GUIDE.md` for detailed setup instructions**
+
 ### Using GPU (if available)
-Set `DEVICE=cuda` in `.env`:
+If you have NVIDIA GPU:
 ```bash
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
-### Loading Custom Fine-tuned Models
-Replace `MODEL_NAME` in `.env` with the path to your fine-tuned model:
+The app auto-detects GPU. Force with:
 ```
-MODEL_NAME=./models/my-fine-tuned-model
+DEVICE=cuda    # Force GPU
+DEVICE=cpu     # Force CPU
 ```
 
 ### Logging
-The application logs to console. For file logging, modify `app/main.py`
+The application logs to console with timestamps. Logs show:
+- Model loading status
+- Device detection (GPU/CPU)
+- Inference errors
+- Startup/shutdown events
 
 ## Common Issues
 

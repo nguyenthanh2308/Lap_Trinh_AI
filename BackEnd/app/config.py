@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
 
 
 class Settings(BaseSettings):
@@ -11,9 +12,9 @@ class Settings(BaseSettings):
     port: int = 8000
     
     # Model settings
-    model_name: str = "gpt2"  # Can be changed to fine-tuned model path
-    device: str = "cpu"  # or "cuda" if GPU available
+    model_folder: str = "./fine_tuned_model"  # Path to fine-tuned model folder
     max_length: int = 200
+    device: Optional[str] = None  # Auto-detect if None (GPU if available, else CPU)
     
     # CORS settings
     cors_origins: list = ["http://localhost:3000", "http://localhost:5173"]

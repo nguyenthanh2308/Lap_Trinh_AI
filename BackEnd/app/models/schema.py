@@ -12,12 +12,12 @@ class StoryRequest(BaseModel):
 
 class StoryResponse(BaseModel):
     """Response body for story generation"""
-    status: str = Field(..., description="Status of the request")
+    status: str = Field(..., description="Status of the request: 'success' or 'error'")
     story: str = Field(..., description="Generated short story")
-    message: Optional[str] = Field(None, description="Additional message")
+    message: Optional[str] = Field(None, description="Additional message or error details")
 
 
 class ErrorResponse(BaseModel):
     """Response body for errors"""
-    status: str = "error"
-    message: str = Field(..., description="Error message")
+    error: str = Field(..., description="Error message describing what went wrong")
+    status: str = Field(default="error", description="Status indicator: always 'error'")
