@@ -40,7 +40,14 @@ ENV/
 # Testing
 .tox/
 .coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
 .pytest_cache/
+*.pot
 htmlcov/
 
 # Jupyter
