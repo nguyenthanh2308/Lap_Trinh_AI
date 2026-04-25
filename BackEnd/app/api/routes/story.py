@@ -1,9 +1,15 @@
 from fastapi import APIRouter, HTTPException, Request, status
-from fastapi.responses import JSONResponse
 from app.models.schema import StoryRequest, StoryResponse, ErrorResponse
-from app.utils.helpers import build_prompt, validate_input
-from app.config import settings
+from app.utils.helpers import (
+    build_fallback_story,
+    build_prompt,
+    detect_language,
+    extract_story_text,
+    is_story_quality_acceptable,
+    validate_input,
+)
 import torch
+import random
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,9 +27,9 @@ async def generate_story(request: StoryRequest, http_request: Request) -> StoryR
     
     This endpoint:
     1. Receives StoryRequest with name, personality, setting, theme
-    2. Builds a Vietnamese prompt string
-    3. Accesses model and tokenizer from app.state
-    4. Generates story with creativity parameters
+    2. Detects language (Vietnamese/English) from user input
+    3. Tries model generation
+    4. Falls back to deterministic complete story if model output is low quality
     5. Returns JSON with generated story
     
     Args:
@@ -35,7 +41,6 @@ async def generate_story(request: StoryRequest, http_request: Request) -> StoryR
         
     Raises:
         400: Invalid input (empty fields)
-        503: Model not loaded
         500: AI generation error
     """
     try:
@@ -44,14 +49,6 @@ async def generate_story(request: StoryRequest, http_request: Request) -> StoryR
         model = app_state.model
         tokenizer = app_state.tokenizer
         device = app_state.device
-        
-        # Check if model is loaded
-        if model is None or tokenizer is None:
-            logger.error("Model or tokenizer is None")
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Model is not loaded. Please check server logs."
-            )
         
         # Validate input
         request_dict = request.model_dump()
@@ -62,58 +59,91 @@ async def generate_story(request: StoryRequest, http_request: Request) -> StoryR
                 detail="Invalid input: All fields must be non-empty strings"
             )
         
+        # Detect output language from user descriptions
+        language = detect_language(request_dict)
+
         # Build prompt from request
-        prompt = build_prompt(request)
-        logger.info(f"Generated prompt: {prompt}")
-        
-        # Encode prompt to input IDs
-        logger.info("Encoding prompt...")
-        input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
-        logger.info(f"Input shape: {input_ids.shape}")
-        
-        # Generate story with specified parameters
-        logger.info("Generating story with model...")
-        with torch.no_grad():
-            output_ids = model.generate(
-                input_ids,
-                max_new_tokens=150,           # Generate up to 150 new tokens
-                temperature=0.8,               # Control randomness (0.7-0.9 is good for creativity)
-                top_p=0.9,                    # Nucleus sampling for diversity
-                do_sample=True,                # Enable sampling for varied outputs
-                pad_token_id=tokenizer.pad_token_id,
-                eos_token_id=tokenizer.eos_token_id,
-                num_return_sequences=1        # Generate only 1 story
-            )
-        
-        logger.info(f"Generated output shape: {output_ids.shape}")
-        
-        # Decode output to UTF-8 Vietnamese string
-        logger.info("Decoding output to text...")
-        generated_text = tokenizer.decode(
-            output_ids[0],
-            skip_special_tokens=True,
-            clean_up_tokenizer_space=True
-        )
-        
-        # Extract only the story part (remove the prompt)
-        # The generated_text includes the prompt, so we remove it
-        if generated_text.startswith(prompt):
-            story_part = generated_text[len(prompt):].strip()
+        prompt = build_prompt(request, language=language)
+        logger.info("Detected language: %s", language)
+        logger.info("Generated prompt: %s", prompt)
+
+        story_part = ""
+        generation_used = False
+        max_attempts = 3
+
+        # Try model generation when model/tokenizer are available
+        if model is not None and tokenizer is not None:
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    # Reset random seed before each attempt to ensure diverse outputs
+                    # across different requests (prevents model from repeating the same story)
+                    rand_seed = random.randint(0, 2**31 - 1)
+                    torch.manual_seed(rand_seed)
+                    if torch.cuda.is_available():
+                        torch.cuda.manual_seed_all(rand_seed)
+                    logger.info("Attempt %s using seed %s", attempt, rand_seed)
+
+                    logger.info("Encoding prompt for attempt %s...", attempt)
+                    input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
+                    logger.info("Input shape: %s", input_ids.shape)
+
+                    logger.info("Generating story with model (attempt %s/%s)...", attempt, max_attempts)
+                    with torch.no_grad():
+                        output_ids = model.generate(
+                            input_ids,
+                            max_new_tokens=220,
+                            temperature=0.85 + (attempt - 1) * 0.08,
+                            top_p=min(0.97, 0.92 + attempt * 0.02),
+                            top_k=50,
+                            do_sample=True,
+                            repetition_penalty=1.15,
+                            no_repeat_ngram_size=4,
+                            pad_token_id=tokenizer.pad_token_id,
+                            eos_token_id=tokenizer.eos_token_id,
+                            num_return_sequences=1,
+                        )
+
+                    logger.info("Generated output shape: %s", output_ids.shape)
+                    generated_text = tokenizer.decode(
+                        output_ids[0],
+                        skip_special_tokens=True,
+                        clean_up_tokenization_spaces=True,
+                    )
+                    candidate_story = extract_story_text(generated_text, prompt)
+
+                    if is_story_quality_acceptable(candidate_story, language, request):
+                        story_part = candidate_story
+                        generation_used = True
+                        logger.info("Accepted model output on attempt %s", attempt)
+                        break
+
+                    logger.warning("Model output quality is low on attempt %s", attempt)
+                except Exception as gen_error:
+                    logger.warning("Model generation failed on attempt %s: %s", attempt, str(gen_error))
         else:
-            # Fallback if prompt is not at the beginning
-            story_part = generated_text.replace(prompt, "", 1).strip()
-        
-        logger.info(f"Generated story ({len(story_part)} chars): {story_part[:100]}...")
+            logger.warning("Model or tokenizer not available, using fallback story generator")
+
+        # Safety net: ensure user always gets a complete, readable story in VI/EN.
+        if not generation_used:
+            logger.warning("No acceptable model output after %s attempts. Using fallback story builder.", max_attempts)
+            story_part = build_fallback_story(request, language)
+            generation_used = False
+
+        logger.info("Final story (%s chars): %s...", len(story_part), story_part[:100])
         
         # Return success response
         return StoryResponse(
             status="success",
             story=story_part,
-            message="Story generated successfully"
+            message=(
+                f"Story generated successfully in {'Vietnamese' if language == 'vi' else 'English'}"
+                if generation_used
+                else f"Story generated with fallback in {'Vietnamese' if language == 'vi' else 'English'}"
+            ),
         )
     
     except HTTPException:
-        # Re-raise HTTP exceptions (400, 503, etc.)
+        # Re-raise explicit HTTP exceptions (400, etc.)
         raise
     
     except Exception as e:
