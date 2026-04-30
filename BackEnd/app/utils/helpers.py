@@ -15,6 +15,10 @@ _VI_STORY_ANGLES = [
     "Câu chuyện bắt đầu khi nhân vật phát hiện ra sự thật đằng sau một điều tưởng như quen thuộc.",
     "Câu chuyện mở ra trong khung cảnh một thử thách mà không ai dám đối mặt ngoại trừ nhân vật chính.",
     "Câu chuyện được kể từ khoảnh khắc nhân vật phạm phải một sai lầm không thể quay đầu.",
+    "Câu chuyện xoay quanh xung đột trong lòng nhân vật giữa hai cách sống khác nhau.",
+    "Câu chuyện bắt đầu từ khoảnh khắc nhân vật nhận ra rằng họ đang sống trong một cái ngoài hoặc những điều giả dối.",
+    "Câu chuyện phát triển khi nhân vật tìm cách kết nối lại với thứ họ cho là đã mất.",
+    "Câu chuyện dẫn vào một hành trình tự tìm hiểu bản thân thông qua những thử thách bất ngờ.",
 ]
 
 _EN_STORY_ANGLES = [
@@ -24,6 +28,10 @@ _EN_STORY_ANGLES = [
     "The story opens when the character uncovers a truth hidden in plain sight.",
     "The story unfolds around a challenge nobody else dared to confront.",
     "The story begins at the moment the character makes a mistake with lasting consequences.",
+    "The story explores the inner conflict between two opposing paths the character could take.",
+    "The story begins when the character realizes they have been living a lie or illusion.",
+    "The story unfolds as the character attempts to reconnect with something they thought was lost forever.",
+    "The story traces the character's journey of self-discovery through unexpected trials and revelations.",
 ]
 
 VIETNAMESE_DIACRITIC_PATTERN = re.compile(
@@ -152,7 +160,7 @@ def has_garbled_artifacts(text: str) -> bool:
     if not text:
         return True
 
-    garbled_markers = ["Ã", "Â", "Ð", "Ñ", "?", "Ã¢", "Ã£", "Ã´", "Ã "]
+    garbled_markers = ["\u00c3", "\u00c2", "\u00d0", "\u00d1", "\ufffd"]
     if any(marker in text for marker in garbled_markers):
         return True
 
@@ -337,133 +345,136 @@ def is_story_quality_acceptable(story: str, language: str, request: StoryRequest
 
 
 def build_fallback_story(request: StoryRequest, language: str) -> str:
-    """Build a varied story when model output is poor.
-
-    Uses 5-8 options per narrative section and randomises between
-    three different paragraph orderings so consecutive requests with
-    different inputs produce clearly distinct stories.
-    """
-    guidance = _theme_guidance(request.theme, language)
+    """Build a complete fallback story with varied narrative structures."""
+    g = _theme_guidance(request.theme, language)
     n, p, s, t = request.name, request.personality, request.setting, request.theme
+    style = RNG.randint(0, 6)
 
     if language == "vi":
-        openings = [
-            f"{n} lớn lên ở {s} với tính cách {p} khiến ai cũng quý mến.",
-            f"Tại {s}, {n} được biết đến là người {p} hiếm có.",
-            f"Giữa {s} náo nhiệt, {n} vẫn giữ được bản tính {p} của mình.",
-            f"Không ai ở {s} ngạc nhiên khi {n} lại là người {p} nhất đám.",
-            f"{n} chưa bao giờ nghĩ rằng cuộc sống ở {s} lại thay đổi nhanh đến vậy.",
-            f"Buổi sáng hôm đó ở {s}, {n} thức dậy với linh cảm rằng mọi thứ sắp khác đi.",
-            f"Người ta nói {s} sinh ra những con người {p}, và {n} chính là minh chứng.",
-            f"Trong ký ức của nhiều người ở {s}, {n} luôn gắn với hình ảnh {p} và kiên định.",
-        ]
-        setups = [
-            f"Cho đến ngày {n} phải đối mặt với {guidance['challenge']} — thứ chưa ai trong {s} dám nhìn thẳng vào.",
-            f"Mọi thứ thay đổi khi một biến cố ập đến, đẩy {n} vào tình huống không lối thoát rõ ràng.",
-            f"Rồi một sự kiện liên quan đến {t} xảy ra, buộc {n} phải đưa ra quyết định quan trọng nhất cuộc đời.",
-            f"Không ai ngờ chính {n} lại là người đứng giữa tâm bão khi {guidance['challenge']} bùng phát.",
-            f"Một cuộc gặp gỡ tình cờ kéo {n} vào vòng xoáy của {guidance['challenge']}.",
-            f"Khi tin tức về {guidance['challenge']} lan ra khắp {s}, {n} biết mình không thể đứng ngoài.",
-        ]
-        middles = [
-            f"Không ít lần {n} muốn bỏ cuộc, nhưng tính cách {p} không cho phép điều đó xảy ra.",
-            f"Vấp ngã liên tiếp, {n} dần nhận ra rằng {guidance['growth']} mới là con đường duy nhất.",
-            f"Giữa lúc khó khăn nhất, {n} tìm thấy sức mạnh từ những người xung quanh.",
-            f"Mỗi thất bại là một bài học, và {n} học cách đứng dậy nhanh hơn sau mỗi lần ngã.",
-            f"{n} bắt đầu hiểu rằng {guidance['growth']} không phải điểm đến mà là hành trình.",
-            f"Dù áp lực ngày càng lớn, {n} không để mất đi bản thân giữa tất cả sóng gió đó.",
-        ]
-        climaxes = [
-            f"Đỉnh điểm đến khi {n} đứng trước lựa chọn cuối cùng và chọn điều đúng dù không dễ dàng.",
-            f"Trong khoảnh khắc ai cũng nghĩ đã thua, {n} bước ra và thay đổi cục diện.",
-            f"{n} nhận ra rằng giải pháp nằm ngay trong tính cách {p} của mình — và hành động.",
-            f"Khi căng thẳng lên đến cực điểm, {n} đưa ra quyết định dứt khoát khiến mọi người sửng sốt.",
-            f"Đúng lúc mọi thứ tưởng như sụp đổ, {n} tìm ra một lối thoát không ai nghĩ tới.",
-        ]
-        endings = [
-            f"Nhìn lại hành trình, {n} hiểu rằng {t} không chỉ là một từ — đó là cách sống. {guidance['message']}.",
-            f"{s} trở lại bình yên, nhưng {n} đã không còn là người cũ. {guidance['message']}.",
-            f"Câu chuyện của {n} trở thành lời nhắc nhở cho {s}: {guidance['message']}.",
-            f"Sau tất cả, điều còn lại không phải chiến thắng mà là bài học về {t}: {guidance['message']}.",
-            f"Từ đó, {n} sống khác đi — không ồn ào, nhưng sâu sắc hơn. Vì {n} đã hiểu: {guidance['message']}.",
-        ]
+     if style == 0:
+         parts = [
+          f"Tại {s}, {n} được biết đến là người {p}, nhưng chính điều đó lại khiến mọi người nghĩ {n} sẽ luôn ổn trong mọi hoàn cảnh.",
+          f"Biến cố đến khi {g['challenge']} xuất hiện, kéo theo những hiểu lầm và áp lực mà {n} chưa từng chuẩn bị để đối mặt.",
+          f"Ban đầu, {n} chọn cách im lặng để tránh va chạm. Nhưng càng lùi lại, mọi chuyện càng trở nên khó kiểm soát hơn.",
+          f"Trong khoảnh khắc quyết định, {n} bước ra, chấp nhận rủi ro để làm điều đúng đắn và bảo vệ những gì quan trọng.",
+          f"Sau tất cả, {n} hiểu sâu sắc rằng {t} không chỉ là lời nói. {g['message']}."
+         ]
+     elif style == 1:
+         parts = [
+          f"Không có nhiều thời gian để suy nghĩ. Khi {g['challenge']} bùng phát ở {s}, {n} phải hành động ngay.",
+          f"Ít ai biết người mang tính cách {p} như {n} cũng đã từng hoài nghi chính mình trước áp lực lớn.",
+          f"Nhiều nỗ lực đầu tiên thất bại. Mỗi sai lầm đều khiến {n} chậm lại, nhưng cũng giúp nhìn rõ vấn đề hơn.",
+          f"Đến lúc mọi thứ tưởng như bế tắc, {n} chọn đối diện sự thật thay vì chạy theo giải pháp dễ dàng.",
+          f"Nhìn lại hành trình ấy, {n} hiểu rõ hơn ý nghĩa của {t}: {g['message']}."
+         ]
+     elif style == 2:
+         parts = [
+          f"Nhiều năm sau, mỗi lần nhắc đến {s}, {n} vẫn nhớ giai đoạn đã thay đổi cách mình nhìn cuộc sống.",
+          f"Khi đó, {n} còn nghĩ rằng chỉ cần chăm chỉ là đủ. Nhưng {g['challenge']} cho thấy mọi chuyện phức tạp hơn nhiều.",
+          f"Từng lựa chọn nhỏ trong giai đoạn khó khăn đã buộc {n} học cách chịu trách nhiệm với hậu quả.",
+          f"Điều quý giá nhất không phải chiến thắng nhanh, mà là quá trình hiểu bản thân và trưởng thành từng bước.",
+          f"Vì vậy với {n}, {t} luôn gắn với một kết luận rõ ràng: {g['message']}."
+         ]
+     elif style == 3:
+         parts = [
+          f"'Cậu chắc chứ?' là câu hỏi {n} nghe nhiều nhất khi quyết định can thiệp vào chuyện ở {s}.",
+          f"Là người {p}, {n} không thích ồn ào, nhưng cũng không thể làm ngơ khi {g['challenge']} ngày một nghiêm trọng.",
+          f"Có những ngày mọi thứ chỉ toàn tranh cãi và mệt mỏi, khiến {n} muốn dừng lại.",
+          f"Tuy vậy, mỗi lần chùn bước, {n} lại nhớ lý do ban đầu và tiếp tục hành động bằng những việc cụ thể.",
+          f"Đến cuối cùng, chính sự kiên định ấy đã chứng minh rằng {g['message']}."
+         ]
+     elif style == 4:
+         parts = [
+          f"Có hai con đường trước mắt {n}: một con đường dễ chịu và một con đường đúng đắn.",
+          f"Khi {g['challenge']} xảy ra tại {s}, {n} đã thử chọn đường dễ trước, và cái giá phải trả đến rất nhanh.",
+          f"Thất bại khiến {n} buộc phải nhìn thẳng vào giới hạn của mình, thay vì đổ lỗi cho hoàn cảnh.",
+          f"Lần tiếp theo, {n} chọn điều khó hơn, chậm hơn, nhưng phù hợp với giá trị mà {t} đại diện.",
+          f"Từ đó, {n} không còn băn khoăn phải chọn gì nữa, vì {g['message']}."
+         ]
+     elif style == 5:
+         parts = [
+          f"Mọi chuyện ở {s} thay đổi theo từng giai đoạn, và {n} phải học cách thay đổi cùng nó.",
+          f"Tuần đầu, {n} nghĩ có thể xử lý nhanh {g['challenge']}. Thực tế thì hoàn toàn ngược lại.",
+          f"Mỗi giai đoạn đều buộc {n} điều chỉnh cách tiếp cận: bớt nóng vội, nhiều lắng nghe, và hành động có chiến lược.",
+          f"Nhờ vậy, {n} dần hiểu rằng phát triển thật sự không đến từ một khoảnh khắc, mà từ sự bền bỉ lâu dài.",
+          f"Khi nhìn lại, bài học còn lại rõ ràng: {g['message']}."
+         ]
+     else:
+         parts = [
+          f"Khi {g['challenge']} ảnh hưởng cả {s}, đa số chọn đứng ngoài quan sát. {n} thì không.",
+          f"Với tính cách {p}, {n} bắt đầu từ những việc nhỏ, nhưng đủ cụ thể để tạo thay đổi thật.",
+          f"Điều bất ngờ là hành động của {n} dần kéo theo người khác cùng tham gia, biến nỗ lực cá nhân thành nỗ lực chung.",
+          f"Dù vẫn có mâu thuẫn và thất bại, cộng đồng xung quanh {n} đã học được cách phối hợp và tin nhau hơn.",
+          f"Câu chuyện ấy để lại một kết luận bền vững về {t}: {g['message']}."
+         ]
+     return "\n\n".join(parts)
 
-        structure = RNG.randint(0, 2)
-        if structure == 0:
-            parts = [_pick(openings), _pick(setups), _pick(middles), _pick(climaxes), _pick(endings)]
-        elif structure == 1:
-            parts = [_pick(setups), _pick(openings), _pick(middles), _pick(climaxes), _pick(endings)]
-        else:
-            parts = [_pick(openings), _pick(middles), _pick(setups), _pick(climaxes), _pick(endings)]
-        return "\n\n".join(parts)
-
-    # ---------- English ----------
-    openings = [
-        f"{n} had always been {p} — it was simply who they were in {s}.",
-        f"In {s}, everyone knew {n} as someone {p} and steady under pressure.",
-        f"Few people in {s} understood {n} fully, but all agreed on one thing: {n} was {p}.",
-        f"{n} never planned to stand out in {s}, yet a {p} spirit is hard to hide.",
-        f"Life in {s} had shaped {n} into someone {p}, though {n} rarely thought about it.",
-        f"On an ordinary morning in {s}, {n} made a small decision that changed everything.",
-        f"The people of {s} called {n} {p} — some meant it as a compliment, others as a warning.",
-        f"{n} arrived in {s} quietly, carrying nothing but a {p} nature and an open mind.",
-    ]
-    setups = [
-        f"That changed the day {n} encountered {guidance['challenge']} and realized the old approach would not work.",
-        f"A sudden crisis involving {t} forced {n} to make a choice no one else dared to make.",
-        f"When {guidance['challenge']} arrived, everyone looked away — except {n}.",
-        f"An unexpected event tied to {t} pulled {n} into a conflict that felt deeply personal.",
-        f"Without warning, {n} found themselves at the center of exactly the kind of situation {s} feared most.",
-        f"One afternoon, a stranger arrived in {s} and everything {n} thought was settled became uncertain.",
-    ]
-    middles = [
-        f"The road was not easy. Again and again {n} stumbled, but each failure made the next step clearer.",
-        f"{n} began to understand that {guidance['growth']} was not a shortcut — it was the whole point.",
-        f"Doubt crept in, but {n}'s {p} character kept pushing forward when logic said to stop.",
-        f"Every setback taught {n} something new, and slowly a plan took shape from the wreckage.",
-        f"There were moments {n} wanted to walk away. Instead, {n} stayed and learned {guidance['growth']}.",
-        f"The hardest part was not the obstacle itself — it was admitting that {guidance['growth']} was necessary.",
-    ]
-    climaxes = [
-        f"At the breaking point, {n} chose action over hesitation and confronted the conflict head-on.",
-        f"When the moment came, {n} did not wait for permission — and that made all the difference.",
-        f"In the final hour, {n}'s {p} spirit became the one thing {s} needed most.",
-        f"No one expected {n} to step forward. But stepping forward was exactly what {n} did.",
-        f"The turning point arrived quietly, and {n} met it with a calm that surprised even close friends.",
-    ]
-    endings = [
-        f"Afterward, {s} felt different — lighter somehow. And {n} carried a new understanding of {t}: {guidance['message']}.",
-        f"The crisis passed, but its lesson stayed: {guidance['message']}. {n} would not forget it.",
-        f"People in {s} talked about it for years — not the conflict, but what {n} did next. {guidance['message']}.",
-        f"{n} never became famous for it. But in {s}, the quiet truth remained: {guidance['message']}.",
-        f"Looking back, {n} realized that {t} was never about the destination. {guidance['message']}.",
-    ]
-
-    structure = RNG.randint(0, 2)
-    if structure == 0:
-        parts = [_pick(openings), _pick(setups), _pick(middles), _pick(climaxes), _pick(endings)]
-    elif structure == 1:
-        parts = [_pick(setups), _pick(openings), _pick(middles), _pick(climaxes), _pick(endings)]
+    if style == 0:
+     parts = [
+         f"In {s}, {n} was known as someone {p}, a person people trusted when things became uncertain.",
+         f"That trust was tested when {g['challenge']} surfaced and turned ordinary routines into daily pressure.",
+         f"At first, {n} tried to keep the peace by stepping back, but silence only gave the problem more room to grow.",
+         f"At the turning point, {n} chose a difficult but honest action, accepting short-term cost for long-term clarity.",
+         f"By the end, {n} understood that {t} is meaningful only when lived through choices: {g['message']}."
+     ]
+    elif style == 1:
+     parts = [
+         f"There was no time to plan. As soon as {g['challenge']} hit {s}, {n} had to move.",
+         f"Even for someone as {p} as {n}, fear and doubt appeared quickly once consequences became real.",
+         f"Several early attempts failed, each one exposing a blind spot and forcing a better approach.",
+         f"When the hardest decision arrived, {n} stopped waiting for certainty and acted with intention.",
+         f"Looking back, {n} no longer described {t} as an idea, but as practice: {g['message']}."
+     ]
+    elif style == 2:
+     parts = [
+         f"Years later, {n} would still remember that period in {s} as a turning point.",
+         f"Before it happened, {n} believed effort alone could solve everything. Then {g['challenge']} changed that belief.",
+         f"The process was messy: wrong turns, difficult conversations, and responsibility that could not be postponed.",
+         f"What mattered most was not a dramatic victory, but steady growth in judgment and character.",
+         f"That is why {n} speaks about {t} with quiet certainty now: {g['message']}."
+     ]
+    elif style == 3:
+     parts = [
+         f"'Are you sure?' was the question {n} heard repeatedly while stepping into conflict in {s}.",
+         f"As someone {p}, {n} preferred calm solutions, but {g['challenge']} made passivity impossible.",
+         f"The middle was exhausting, full of friction and setbacks that made quitting look reasonable.",
+         f"Still, {n} kept going through small, concrete decisions that rebuilt trust one step at a time.",
+         f"In the end, the result was simple and lasting: {g['message']}."
+     ]
+    elif style == 4:
+     parts = [
+         f"{n} discovered there were two paths: the easier one and the right one.",
+         f"When {g['challenge']} reached {s}, the easy path failed quickly and made the cost visible.",
+         f"That failure forced {n} to re-evaluate priorities, not circumstances.",
+         f"On the second attempt, {n} chose the harder path aligned with the meaning of {t}.",
+         f"From that point on, the lesson remained clear: {g['message']}."
+     ]
+    elif style == 5:
+     parts = [
+         f"The situation in {s} changed in waves, and {n} had to change with it.",
+         f"In the first phase, {n} rushed to fix {g['challenge']}. The result was incomplete and fragile.",
+         f"Over time, the strategy matured: less reaction, more listening, and decisions built for endurance.",
+         f"That slower pace transformed not only outcomes but also how {n} understood responsibility.",
+         f"The final takeaway was not dramatic, but deeply practical: {g['message']}."
+     ]
     else:
-        parts = [_pick(openings), _pick(middles), _pick(setups), _pick(climaxes), _pick(endings)]
+     parts = [
+         f"When {g['challenge']} affected everyone in {s}, most people watched from a safe distance. {n} stepped in.",
+         f"Being {p}, {n} began with small commitments that were visible and consistent.",
+         f"Those actions created momentum, and others gradually joined, turning an individual effort into a shared one.",
+         f"There were setbacks, but the group learned to coordinate, recover, and continue.",
+         f"That collective experience gave {t} a concrete meaning for everyone involved: {g['message']}."
+     ]
+
     return "\n\n".join(parts)
 
 
 def validate_input(data: Dict[str, str]) -> bool:
-    """
-    Validate input data
-
-    Args:
-        data: Dictionary containing story parameters
-
-    Returns:
-        True if valid, False otherwise
-    """
-    required_fields = ['name', 'personality', 'setting', 'theme']
-
+    """Validate input data."""
+    required_fields = ["name", "personality", "setting", "theme"]
     for field in required_fields:
-        if field not in data or not isinstance(data[field], str) or len(data[field].strip()) == 0:
-            logger.warning(f"Missing or empty field: {field}")
-            return False
-
+     if field not in data or not isinstance(data[field], str) or len(data[field].strip()) == 0:
+         logger.warning(f"Missing or empty field: {field}")
+         return False
     return True
+

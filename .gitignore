@@ -62,6 +62,8 @@ htmlcov/
 *.pt
 *.pth
 *.ckpt
+fine_tuned_model/
+BackEnd/fine_tuned_model/
 
 # Environment
 .env

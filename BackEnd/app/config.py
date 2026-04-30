@@ -17,7 +17,11 @@ class Settings(BaseSettings):
     device: Optional[str] = None  # Auto-detect if None (GPU if available, else CPU)
     
     # CORS settings
-    cors_origins: list = ["http://localhost:3000", "http://localhost:5173"]
+    cors_origins: list = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+    ]
     
     class Config:
         env_file = ".env"

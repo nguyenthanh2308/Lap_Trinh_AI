@@ -92,12 +92,12 @@ async def generate_story(request: StoryRequest, http_request: Request) -> StoryR
                         output_ids = model.generate(
                             input_ids,
                             max_new_tokens=220,
-                            temperature=0.85 + (attempt - 1) * 0.08,
-                            top_p=min(0.97, 0.92 + attempt * 0.02),
-                            top_k=50,
+                            temperature=0.92 + (attempt - 1) * 0.06,  # Higher baseline for creativity
+                            top_p=0.95 - attempt * 0.01,  # Slightly lower for coherence
+                            top_k=60,  # Increased from 50 for more diversity
                             do_sample=True,
-                            repetition_penalty=1.15,
-                            no_repeat_ngram_size=4,
+                            repetition_penalty=1.08,  # Reduced from 1.15 to allow more natural phrasing
+                            no_repeat_ngram_size=3,  # Reduced from 4 to allow more flexibility
                             pad_token_id=tokenizer.pad_token_id,
                             eos_token_id=tokenizer.eos_token_id,
                             num_return_sequences=1,
