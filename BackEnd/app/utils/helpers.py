@@ -114,53 +114,136 @@ def detect_language(data: Dict[str, str]) -> str:
     return "vi" if vi_score > en_score else "en"
 
 
+def _theme_as_direction(theme: str, language: str) -> str:
+    """
+    Convert the user's theme string into a narrative instruction.
+
+    This avoids injecting the raw theme label into the prompt which would
+    cause the model to copy it verbatim. Instead the model receives a
+    concrete storytelling objective.
+    """
+    t = theme.strip().lower()
+
+    if language == "vi":
+        # Attempt a semantic match first
+        _VI_MAP = {
+            ("phiêu lưu", "khám phá", "mạo hiểm"): (
+                "Hãy tạo cảm giác bước vào điều chưa biết — không cần giải thích, chỉ cần cho thấy nhân vật đang chuyển động vào vùng lãnh thổ mới."
+            ),
+            ("tình bạn", "bạn bè", "đồng đội", "friendship"): (
+                "Hãy để khoảnh khắc nhỏ giữa hai người nói lên mối liên kết — không cần dùng từ 'tình bạn'."
+            ),
+            ("gia đình", "tình thân", "family"): (
+                "Hãy thể hiện sợi dây vô hình giữa các nhân vật qua hành động chứ không qua lời khai."
+            ),
+            ("hy vọng", "niềm tin", "hope"): (
+                "Hãy tạo một khoảnh khắc nhỏ — ánh sáng, âm thanh, cử chỉ — gợi lên cảm giác không từ bỏ."
+            ),
+            ("dũng cảm", "can đảm", "courage"): (
+                "Hãy để nhân vật làm điều đúng dù sợ — không giải thích lý do, chỉ cho thấy hành động."
+            ),
+            ("mất mát", "chia ly", "loss"): (
+                "Hãy để sự vắng mặt hiện diện qua chi tiết cụ thể — đồ vật, khoảng trống, thói quen bị gián đoạn."
+            ),
+            ("kinh dị", "sợ hãi", "bí ẩn", "horror", "mystery"): (
+                "Hãy tạo bầu không khí bất an qua chi tiết bình thường bị lệch nhẹ — không dùng từ 'kinh dị'."
+            ),
+            ("tình yêu", "lãng mạn", "romance", "love"): (
+                "Hãy để cảm xúc rò rỉ qua ánh nhìn, khoảng cách, vật nhỏ — không phải lời tỏ tình trực tiếp."
+            ),
+        }
+        for keywords, direction in _VI_MAP.items():
+            if any(kw in t for kw in keywords):
+                return direction
+        # Generic fallback — wrap the theme as a feeling to evoke
+        return (
+            f"Hãy thể hiện tinh thần của '{theme}' qua những gì nhân vật làm và cảm nhận, "
+            "không nhắc thẳng từ này trong truyện."
+        )
+
+    # English
+    _EN_MAP = {
+        ("adventure", "exploration", "journey"): (
+            "Evoke the sensation of crossing into the unknown — show movement, not narration."
+        ),
+        ("friendship", "friends", "teamwork", "bond"): (
+            "Let a small, wordless moment carry the weight of the relationship."
+        ),
+        ("family", "belonging", "home"): (
+            "Show the invisible thread between people through gesture, not declaration."
+        ),
+        ("hope", "faith", "resilience"): (
+            "Find one tiny detail — a light, a sound, a reflex — that refuses to give up."
+        ),
+        ("courage", "bravery", "fear"): (
+            "Let the character act despite fear — no explanation, just the action."
+        ),
+        ("loss", "grief", "absence"): (
+            "Let an absence become physical — an object, a habit broken, a gap in a conversation."
+        ),
+        ("horror", "mystery", "dread", "secret"): (
+            "Create unease through an ordinary thing that is slightly wrong — no genre labels."
+        ),
+        ("love", "romance", "longing"): (
+            "Let emotion leak through proximity, objects, and silence — not confession."
+        ),
+        ("growth", "change", "identity"): (
+            "Show the before and after through a single repeated action that means something different."
+        ),
+    }
+    for keywords, direction in _EN_MAP.items():
+        if any(kw in t for kw in keywords):
+            return direction
+    return (
+        f"Write so that the reader feels '{theme}' in the atmosphere and action, "
+        f"without the word '{theme}' ever appearing in the text."
+    )
+
+
 def build_prompt(request: StoryRequest, language: str) -> str:
     """
     Build a prompt based on detected language.
 
-    A random story-angle hint is injected each call so the model is guided
-    toward a fresh narrative direction even when the user inputs are similar.
-
-    Args:
-        request: StoryRequest containing name, personality, setting, theme
-        language: Detected language code ("vi" or "en")
-
-    Returns:
-        Prompt string in Vietnamese or English
+    The theme is deliberately NOT passed as a labelled field to prevent
+    the model from copying the word into the story. Instead it is translated
+    into a narrative direction so the model embodies the theme through
+    action, imagery, and atmosphere.
     """
+    angle = RNG.choice(_VI_STORY_ANGLES if language == "vi" else _EN_STORY_ANGLES)
+    creative = build_creative_direction(request, language)
+    theme_dir = _theme_as_direction(request.theme, language)
+
     if language == "vi":
-        angle = RNG.choice(_VI_STORY_ANGLES)
         prompt = (
-            "Hãy viết một truyện ngắn hoàn chỉnh bằng tiếng Việt (khoảng 180-260 từ), "
-            "có mở đầu, cao trào và kết thúc rõ ràng. "
-            "Mỗi lần tạo phải là một diễn biến mới, không lặp lại cốt truyện trước đó. "
-            "Chủ đề phải là thông điệp xuyên suốt, không biến thành tên nhân vật hay tên đồ vật. "
+            "Viết một truyện ngắn bằng tiếng Việt (khoảng 200-280 từ). "
+            "Truyện không cần theo cấu trúc ba đoạn quen thuộc — "
+            "có thể bắt đầu từ giữa, kể ngược, hoặc tập trung vào một khoảnh khắc duy nhất. "
             f"{angle} "
-            f"Nhân vật chính: {request.name}. "
-            f"Tính cách: {request.personality}. "
+            f"Nhân vật chính: {request.name}, tính cách {request.personality}. "
             f"Bối cảnh: {request.setting}. "
-            f"Chủ đề: {request.theme}. "
+            f"{theme_dir}"
+            f"{creative} "
             "Truyện:"
         )
     else:
-        angle = RNG.choice(_EN_STORY_ANGLES)
         prompt = (
-            "Write a complete short story in English (about 180-260 words) with "
-            "a clear beginning, conflict, climax, and ending. "
-            "Generate a fresh plot each time, do not reuse previous story flow. "
-            "Treat the theme as a central message, not as a character name or an object name. "
+            "Write a short story in English (about 200-280 words). "
+            "The story does not need a standard three-act shape — "
+            "it may open in the middle, run in reverse, or orbit a single moment. "
             f"{angle} "
-            f"Main character: {request.name}. "
-            f"Personality: {request.personality}. "
+            f"Main character: {request.name}, personality: {request.personality}. "
             f"Setting: {request.setting}. "
-            f"Theme: {request.theme}. "
+            f"{theme_dir}"
+            f"{creative} "
             "Story:"
         )
 
     return prompt
 
 
+
 def extract_story_text(generated_text: str, prompt: str) -> str:
+
     """Extract only story body and remove prompt remnants."""
     text = generated_text.strip()
 
@@ -427,33 +510,27 @@ _EN_OPENING_HOOKS = [
 
 def build_creative_direction(request: StoryRequest, language: str) -> str:
     """Tell the model to transform inputs into imagery instead of repeating them."""
+    hook = RNG.choice(_VI_OPENING_HOOKS if language == "vi" else _EN_OPENING_HOOKS)
+
     if language == "vi":
-        hook = RNG.choice(_VI_OPENING_HOOKS)
         return (
-            "\nHướng sáng tạo: dùng mô tả người dùng như cảm hứng, không bê nguyên "
-            "cụm từ vào truyện. Nếu bối cảnh là một cụm như thành phố trống rỗng, "
-            "hãy biến nó thành hình ảnh, âm thanh, chi tiết cụ thể. Nếu chủ đề là "
-            "kinh dị, hãy tạo cảm giác bất an thay vì viết thẳng chữ kinh dị nhiều lần. "
-            f"Tránh văn kiểu bài học đạo đức hoặc dàn ý năm đoạn. {hook}"
+            "Hướng sáng tạo: chủ đề là la bàn cảm xúc, không phải từ ngữ cần nhắc lại — "
+            "tuyệt đối không viết thẳng tên chủ đề vào truyện. "
+            "Thể hiện chủ đề qua hành động cụ thể, hình ảnh, đối thoại, hoặc chi tiết nhỏ. "
+            "Bối cảnh là không gian cảm giác, hãy biến nó thành âm thanh, mùi, ánh sáng — "
+            "không bê nguyên cụm từ mô tả. "
+            f"Tránh cấu trúc: nguyên nhân → bước ngoặt → bài học. {hook}"
         )
 
-    hook = RNG.choice(_EN_OPENING_HOOKS)
-    literal_phrases = [
-        phrase.strip()
-        for phrase in (request.personality, request.setting, request.theme)
-        if len(phrase.strip()) >= 4
-    ]
-    phrase_text = "; ".join(f'"{phrase}"' for phrase in literal_phrases)
+    # English
+    theme_word = request.theme.strip().lower()
     return (
-        "\nCreative direction: treat the user's descriptions as raw material, "
-        "not wording to paste into the story. Transform setting/theme/personality "
-        "into scenes, actions, symbols, and atmosphere. Avoid repeating these exact "
-        f"phrases unless absolutely necessary: {phrase_text}. Do not write a moral "
-        "essay, lesson, objective, glossary, question-answer, textbook explanation, "
-        f"or tutorial. {hook}"
+        f'Do NOT use the word "{theme_word}" or synonyms of it in the story text. '
+        "The theme must live only in what happens, not in what is named. "
+        "Transform setting/personality into sensory images — do not paste the user's labels. "
+        "Avoid the pattern: cause → turning point → lesson. "
+        f"{hook}"
     )
-
-
 
 def build_creative_english_fallback(request: StoryRequest) -> str:
     """Fallback that interprets inputs through imagery instead of copying them."""
@@ -777,18 +854,25 @@ def score_story_candidate(story: str, language: str, request: StoryRequest) -> i
         score -= 30
 
     context_hits = 0
-    for source in (request.personality, request.setting, request.theme):
+    for source in (request.personality, request.setting):  # theme excluded — model should evoke, not name
         tokens = [token for token in re.findall(r"\w+", source.lower()) if len(token) >= 4]
         if any(token in lowered for token in tokens):
             context_hits += 1
     score += context_hits * 12
 
-    for phrase in (request.personality, request.setting, request.theme):
+    # Penalise literal pasting of setting/personality labels
+    for phrase in (request.personality, request.setting):
         normalized_phrase = phrase.strip().lower()
         if len(normalized_phrase) >= 4:
             exact_count = lowered.count(normalized_phrase)
             if exact_count:
-                score -= 6 * exact_count  # Reduced from 10 to allow more natural phrasing
+                score -= 6 * exact_count
+
+    # Heavy penalty if the theme word itself appears verbatim (show-don't-tell rule)
+    theme_words = [w for w in re.findall(r"\w+", request.theme.lower()) if len(w) >= 4]
+    theme_hits = sum(lowered.count(w) for w in theme_words)
+    if theme_hits >= 2:
+        score -= theme_hits * 8
 
     sentence_count = len(re.findall(r"[.!?]+", text))
     if 5 <= sentence_count <= 14:
