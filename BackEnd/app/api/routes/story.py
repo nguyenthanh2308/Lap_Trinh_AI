@@ -2,10 +2,13 @@ from fastapi import APIRouter, HTTPException, Request, status
 from app.models.schema import StoryRequest, StoryResponse, ErrorResponse
 from app.utils.helpers import (
     build_fallback_story,
+    build_creative_direction,
     build_prompt,
+    clean_generated_story,
     detect_language,
     extract_story_text,
     is_story_quality_acceptable,
+    score_story_candidate,
     validate_input,
 )
 import torch
@@ -64,12 +67,15 @@ async def generate_story(request: StoryRequest, http_request: Request) -> StoryR
 
         # Build prompt from request
         prompt = build_prompt(request, language=language)
+        prompt += build_creative_direction(request, language)
         logger.info("Detected language: %s", language)
         logger.info("Generated prompt: %s", prompt)
 
         story_part = ""
         generation_used = False
-        max_attempts = 3
+        max_attempts = 2
+        best_candidate = ""
+        best_score = -10_000
 
         # Try model generation when model/tokenizer are available
         if model is not None and tokenizer is not None:
@@ -91,39 +97,60 @@ async def generate_story(request: StoryRequest, http_request: Request) -> StoryR
                     with torch.no_grad():
                         output_ids = model.generate(
                             input_ids,
-                            max_new_tokens=220,
-                            temperature=0.92 + (attempt - 1) * 0.06,  # Higher baseline for creativity
-                            top_p=0.95 - attempt * 0.01,  # Slightly lower for coherence
-                            top_k=60,  # Increased from 50 for more diversity
+                            max_new_tokens=280,
+                            temperature=1.05 + (attempt - 1) * 0.10,
+                            top_p=min(0.97, 0.95 + attempt * 0.02),
+                            top_k=100,
                             do_sample=True,
-                            repetition_penalty=1.08,  # Reduced from 1.15 to allow more natural phrasing
-                            no_repeat_ngram_size=3,  # Reduced from 4 to allow more flexibility
+                            repetition_penalty=1.15,
+                            no_repeat_ngram_size=3,
                             pad_token_id=tokenizer.pad_token_id,
                             eos_token_id=tokenizer.eos_token_id,
-                            num_return_sequences=1,
+                            num_return_sequences=3,
                         )
 
                     logger.info("Generated output shape: %s", output_ids.shape)
-                    generated_text = tokenizer.decode(
-                        output_ids[0],
-                        skip_special_tokens=True,
-                        clean_up_tokenization_spaces=True,
-                    )
-                    candidate_story = extract_story_text(generated_text, prompt)
+                    for output_id in output_ids:
+                        generated_text = tokenizer.decode(
+                            output_id,
+                            skip_special_tokens=True,
+                            clean_up_tokenization_spaces=True,
+                        )
+                        candidate_story = clean_generated_story(
+                            extract_story_text(generated_text, prompt)
+                        )
+                        candidate_score = score_story_candidate(candidate_story, language, request)
+                        logger.info("Candidate score on attempt %s: %s", attempt, candidate_score)
 
-                    if is_story_quality_acceptable(candidate_story, language, request):
-                        story_part = candidate_story
-                        generation_used = True
-                        logger.info("Accepted model output on attempt %s", attempt)
+                        if candidate_score > best_score:
+                            best_score = candidate_score
+                            best_candidate = candidate_story
+
+                        if (
+                            candidate_score >= 55
+                            and is_story_quality_acceptable(candidate_story, language, request)
+                        ):
+                            story_part = candidate_story
+                            generation_used = True
+                            logger.info("Accepted model output on attempt %s", attempt)
+                            break
+
+                    if generation_used:
                         break
 
-                    logger.warning("Model output quality is low on attempt %s", attempt)
+                    logger.warning("No strong candidate on attempt %s", attempt)
                 except Exception as gen_error:
                     logger.warning("Model generation failed on attempt %s: %s", attempt, str(gen_error))
         else:
             logger.warning("Model or tokenizer not available, using fallback story generator")
 
-        # Safety net: ensure user always gets a complete, readable story in VI/EN.
+        # Prefer the model's best draft over template fallback when it is readable.
+        if not generation_used and best_candidate and best_score >= 40:
+            logger.warning("Using best creative model draft with score %s.", best_score)
+            story_part = best_candidate
+            generation_used = True
+
+        # Safety net: ensure user always gets a complete, readable story.
         if not generation_used:
             logger.warning("No acceptable model output after %s attempts. Using fallback story builder.", max_attempts)
             story_part = build_fallback_story(request, language)

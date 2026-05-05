@@ -16,7 +16,7 @@ backend/
 ```bash
 cd backend
 python -m venv venv
-.\venv\Scripts\Activate.ps1
+http://localhost:20128
 pip install -r requirements.txt
 ```
 

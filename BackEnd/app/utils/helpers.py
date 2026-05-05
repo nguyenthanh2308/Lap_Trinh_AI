@@ -19,7 +19,19 @@ _VI_STORY_ANGLES = [
     "Câu chuyện bắt đầu từ khoảnh khắc nhân vật nhận ra rằng họ đang sống trong một cái ngoài hoặc những điều giả dối.",
     "Câu chuyện phát triển khi nhân vật tìm cách kết nối lại với thứ họ cho là đã mất.",
     "Câu chuyện dẫn vào một hành trình tự tìm hiểu bản thân thông qua những thử thách bất ngờ.",
+    # Các góc nhìn phi tuyến và đa dạng hơn
+    "Câu chuyện bắt đầu ngay giữa hành động, không có lời giới thiệu, chỉ có khoảnh khắc đang xảy ra.",
+    "Câu chuyện mở đầu bằng một câu đối thoại cắt ngang im lặng và mọi thứ bắt đầu từ đó.",
+    "Câu chuyện được kể ngược, từ kết thúc trở về cái khoảnh khắc khiến mọi thứ thay đổi.",
+    "Câu chuyện bắt đầu từ một chi tiết rất nhỏ, một âm thanh, một mùi hương, một vật bỏ quên, rồi mở rộng ra.",
+    "Câu chuyện nhìn từ góc độ của người đứng ngoài quan sát nhân vật chính trước khi hiểu toàn cảnh.",
+    "Câu chuyện bắt đầu khi nhân vật sắp từ bỏ tất cả và chỉ một điều nhỏ bé ngăn họ lại.",
+    "Câu chuyện mở đầu bằng một bí mật mà nhân vật giấu kín và toàn bộ cốt truyện là cách bí mật đó rò rỉ.",
+    "Câu chuyện bắt đầu từ một nơi quen thuộc nhưng hôm nay có điều gì đó sai sai mà nhân vật chưa thể xác định.",
+    "Câu chuyện diễn ra trong một đêm duy nhất từ hoàng hôn đến bình minh và mọi thứ thay đổi trong khoảng đó.",
+    "Câu chuyện mở ra bằng một mất mát và hành trình là tìm lại thứ đã mất dù không phải theo nghĩa đen.",
 ]
+
 
 _EN_STORY_ANGLES = [
     "The story begins on an ordinary day that suddenly takes an unexpected turn.",
@@ -32,7 +44,19 @@ _EN_STORY_ANGLES = [
     "The story begins when the character realizes they have been living a lie or illusion.",
     "The story unfolds as the character attempts to reconnect with something they thought was lost forever.",
     "The story traces the character's journey of self-discovery through unexpected trials and revelations.",
+    # Non-linear and diverse openings
+    "The story drops straight into the action with no setup, no introduction, just the moment itself.",
+    "The story opens with a single line of dialogue that breaks the silence and sets everything in motion.",
+    "The story is told in reverse, starting from the aftermath and working back to the decision that caused it.",
+    "The story begins with a tiny detail, a sound, a smell, a forgotten object, that slowly opens into something vast.",
+    "The story is seen through the eyes of an observer on the edge of the scene before the full picture emerges.",
+    "The story begins when the character is about to give up, and only one small thing stops them.",
+    "The story opens with a secret the character has been keeping, and the entire plot is how it unravels.",
+    "The story starts in a familiar place that feels subtly wrong today in a way the character cannot yet name.",
+    "The story spans a single night from dusk to dawn, and everything shifts within those hours.",
+    "The story begins with a loss, and the whole journey is about recovering what was lost, though not literally.",
 ]
+
 
 VIETNAMESE_DIACRITIC_PATTERN = re.compile(
     r"[àáạảãăằắặẳẵâầấậẩẫèéẹẻẽêềếệểễìíịỉĩ"
@@ -311,6 +335,178 @@ def _theme_guidance(theme: str, language: str) -> dict:
     }
 
 
+def _contains_any(text: str, words: tuple[str, ...]) -> bool:
+    return any(word in text for word in words)
+
+
+def _setting_motif(setting: str) -> str:
+    normalized = setting.lower()
+    if _contains_any(normalized, ("empty", "abandoned", "deserted", "ghost town")):
+        return (
+            "streets where traffic lights changed for nobody, glass towers held "
+            "only reflections, and every footstep sounded borrowed"
+        )
+    if _contains_any(normalized, ("city", "urban", "metropolis")):
+        return (
+            "late trains, locked rooftops, flickering signs, and strangers who "
+            "vanished into crosswalk steam"
+        )
+    if _contains_any(normalized, ("forest", "woods", "jungle")):
+        return (
+            "wet leaves, broken animal paths, old roots underfoot, and a clearing "
+            "that seemed to move when no one watched"
+        )
+    if _contains_any(normalized, ("school", "classroom", "campus")):
+        return (
+            "silent corridors after hours, chalk dust in the air, and one room "
+            "whose door was never listed on the map"
+        )
+    if _contains_any(normalized, ("village", "town")):
+        return (
+            "narrow lanes, familiar windows, whispered news, and a place everyone "
+            "claimed not to remember"
+        )
+    return (
+        "a place with one vivid secret, one forbidden corner, and details that "
+        "slowly stopped behaving normally"
+    )
+
+
+def _theme_motif(theme: str) -> str:
+    normalized = theme.lower()
+    if _contains_any(normalized, ("horror", "fear", "terror", "dread")):
+        return (
+            "a quiet dread that did not jump out, but waited in ordinary sounds "
+            "until the familiar became unsafe"
+        )
+    if _contains_any(normalized, ("mystery", "secret", "detective")):
+        return "a missing fact that made every honest answer feel suspicious"
+    if _contains_any(normalized, ("romance", "love")):
+        return "an affection revealed through risk rather than confession"
+    if _contains_any(normalized, ("adventure", "journey", "exploration")):
+        return "a risky path that kept changing the farther it was followed"
+    if _contains_any(normalized, ("courage", "brave", "bravery")):
+        return "a moment when fear stayed, but someone moved anyway"
+    if _contains_any(normalized, ("family", "home")):
+        return "an old bond tested by something nobody wanted to say aloud"
+    return "a pressure that forced the character to act before they fully understood it"
+
+
+def _personality_gesture(personality: str) -> str:
+    normalized = personality.lower()
+    if _contains_any(normalized, ("brave", "courage", "daring")):
+        return "stepped forward before certainty arrived"
+    if _contains_any(normalized, ("quiet", "shy", "reserved")):
+        return "noticed the detail everyone louder had missed"
+    if _contains_any(normalized, ("clever", "smart", "intelligent")):
+        return "solved problems sideways, by questioning the obvious"
+    if _contains_any(normalized, ("kind", "gentle", "caring")):
+        return "protected someone vulnerable even when it complicated everything"
+    if _contains_any(normalized, ("curious", "restless")):
+        return "opened the one door that should have been left alone"
+    return "made one specific choice that revealed who they were under pressure"
+
+
+
+_VI_OPENING_HOOKS = [
+    "Hãy mở đầu ngay giữa hành động, không cần giới thiệu nhân vật theo kiểu truyền thống.",
+    "Hãy bắt đầu bằng một câu đối thoại hoặc lời độc thoại nội tâm.",
+    "Hãy mở đầu bằng một chi tiết cảm quan rất cụ thể: mùi, âm thanh, kết cấu, ánh sáng.",
+    "Hãy bắt đầu bằng một câu hỏi mà nhân vật đang tự hỏi mình.",
+    "Hãy mở đầu bằng một khoảnh khắc căng thẳng — không phải giải thích, mà là cảm giác.",
+]
+
+_EN_OPENING_HOOKS = [
+    "Open in the middle of the action. Do not introduce the character in a traditional way.",
+    "Start with a line of dialogue or internal monologue, no scene-setting preamble.",
+    "Open with a sharp sensory detail: a smell, a sound, a texture, a quality of light.",
+    "Begin with a question the character is asking themselves.",
+    "Start at the moment of highest tension — show the feeling, not the explanation.",
+]
+
+
+def build_creative_direction(request: StoryRequest, language: str) -> str:
+    """Tell the model to transform inputs into imagery instead of repeating them."""
+    if language == "vi":
+        hook = RNG.choice(_VI_OPENING_HOOKS)
+        return (
+            "\nHướng sáng tạo: dùng mô tả người dùng như cảm hứng, không bê nguyên "
+            "cụm từ vào truyện. Nếu bối cảnh là một cụm như thành phố trống rỗng, "
+            "hãy biến nó thành hình ảnh, âm thanh, chi tiết cụ thể. Nếu chủ đề là "
+            "kinh dị, hãy tạo cảm giác bất an thay vì viết thẳng chữ kinh dị nhiều lần. "
+            f"Tránh văn kiểu bài học đạo đức hoặc dàn ý năm đoạn. {hook}"
+        )
+
+    hook = RNG.choice(_EN_OPENING_HOOKS)
+    literal_phrases = [
+        phrase.strip()
+        for phrase in (request.personality, request.setting, request.theme)
+        if len(phrase.strip()) >= 4
+    ]
+    phrase_text = "; ".join(f'"{phrase}"' for phrase in literal_phrases)
+    return (
+        "\nCreative direction: treat the user's descriptions as raw material, "
+        "not wording to paste into the story. Transform setting/theme/personality "
+        "into scenes, actions, symbols, and atmosphere. Avoid repeating these exact "
+        f"phrases unless absolutely necessary: {phrase_text}. Do not write a moral "
+        "essay, lesson, objective, glossary, question-answer, textbook explanation, "
+        f"or tutorial. {hook}"
+    )
+
+
+
+def build_creative_english_fallback(request: StoryRequest) -> str:
+    """Fallback that interprets inputs through imagery instead of copying them."""
+    n = request.name
+    place = _setting_motif(request.setting)
+    pressure = _theme_motif(request.theme)
+    gesture = _personality_gesture(request.personality)
+    style = RNG.randint(0, 4)
+
+    if style == 0:
+        parts = [
+            f"The first thing {n} noticed was not the silence, but how carefully the world seemed to be holding it.",
+            f"A message scratched beneath a stair rail led {n} through {place}.",
+            f"Every clue suggested {pressure}, and every sensible instinct said to turn back.",
+            f"Instead, {n} {gesture}, following a sound that stopped whenever it was almost understood.",
+            f"At dawn, the answer was smaller than a monster and worse than a dream: someone had been waiting for {n} to choose whether the door should stay closed.",
+        ]
+    elif style == 1:
+        parts = [
+            f"{n} found the photograph in a place where no photograph should have survived.",
+            f"It showed the same corner, the same light, the same impossible stillness of {place}, but with {n} standing in the background.",
+            f"The longer {n} looked, the more the scene suggested {pressure}.",
+            f"Running would have been easier. Instead, {n} {gesture}, then stepped into the street shown in the picture.",
+            f"The figure waiting there wore no face, only {n}'s old hesitation, and it disappeared the moment {n} named what had been avoided.",
+        ]
+    elif style == 2:
+        parts = [
+            f"By midnight, {n} understood that the map was lying.",
+            f"Each street led back to {place}, but each return changed one small detail: a window open, a shoe in the gutter, a child's song from nowhere.",
+            f"The pattern carried {pressure}, not loudly, but with the patience of something certain it would be obeyed.",
+            f"{n} {gesture}, marking the changes on the back of a receipt until the lines formed a question.",
+            f"When the question was answered, the way out appeared behind the only door {n} had been afraid to open.",
+        ]
+    elif style == 3:
+        parts = [
+            f"The call came from {n}'s own number.",
+            f"On the other end was breathing, wind, and the distant echo of {place}.",
+            f"No voice explained anything, yet the pauses carried {pressure}.",
+            f"{n} {gesture}, speaking one sentence into the receiver that had never been admitted aloud.",
+            f"Somewhere nearby, a phone rang in answer, and this time {n} walked toward it instead of away.",
+        ]
+    else:
+        parts = [
+            f"{n} had been warned not to count the windows.",
+            f"That warning made no sense until the buildings around {place} began gaining one new dark square every time {n} looked away.",
+            f"What grew behind the glass was not a creature, but {pressure}.",
+            f"With no one left to ask, {n} {gesture}, choosing the window that reflected a memory instead of a room.",
+            f"The glass broke inward, and the first real sound of morning rushed through like forgiveness with sharp edges.",
+        ]
+
+    return "\n\n".join(parts)
+
+
 def is_story_quality_acceptable(story: str, language: str, request: StoryRequest) -> bool:
     """Check if generated text is usable as a complete short story."""
     if not story:
@@ -344,14 +540,71 @@ def is_story_quality_acceptable(story: str, language: str, request: StoryRequest
     return True
 
 
+def build_creative_vietnamese_fallback(request: StoryRequest) -> str:
+    """Fallback tiếng Việt dùng imagery thay vì paste literal variables."""
+    n = request.name
+    place = _setting_motif(request.setting)
+    pressure = _theme_motif(request.theme)
+    gesture = _personality_gesture(request.personality)
+    g = _theme_guidance(request.theme, "vi")
+    style = RNG.randint(0, 4)
+
+    if style == 0:
+        parts = [
+            f"Điều đầu tiên {n} nhận ra không phải là sự im lặng, mà là cách thế giới xung quanh đang cố giữ lấy nó.",
+            f"Một mảnh giấy nhỏ kẹp dưới bậc cầu thang dẫn {n} qua {place}.",
+            f"Từng manh mối đều gợi lên {pressure}, và từng bản năng lý trí đều bảo quay trở lại.",
+            f"Nhưng {n} {gesture}, đi theo một âm thanh cứ dừng lại mỗi khi sắp được hiểu ra.",
+            f"Đến lúc bình minh ló dạng, câu trả lời nhỏ hơn một con quái vật nhưng nặng hơn cả một giấc mộng: {g['message']}.",
+        ]
+    elif style == 1:
+        parts = [
+            f"{n} tìm thấy tấm ảnh ở một nơi không thể nào còn ảnh tồn tại được.",
+            f"Nó chụp cùng một góc phố, cùng thứ ánh sáng, cùng sự tĩnh lặng kỳ lạ của {place} — nhưng có bóng {n} đứng phía sau.",
+            f"Càng nhìn lâu, khung cảnh càng gợi lên {pressure}.",
+            f"Bỏ chạy lẽ ra dễ hơn. Nhưng {n} {gesture}, rồi bước vào con đường trong tấm ảnh.",
+            f"Bóng người đứng đợi không có khuôn mặt — chỉ mang theo sự do dự cũ của {n} — và tan biến ngay khi {n} gọi tên điều mình đã tránh né: {g['message']}.",
+        ]
+    elif style == 2:
+        parts = [
+            f"Đến nửa đêm, {n} hiểu ra rằng tấm bản đồ đang nói dối.",
+            f"Mỗi con phố đều dẫn trở lại {place}, nhưng mỗi lần quay lại lại thay đổi một chi tiết nhỏ: một ô cửa sổ hé mở, một chiếc giày bên lề đường, một tiếng hát trẻ con từ đâu đó.",
+            f"Mạch truyện ẩn chứa {pressure} — không ồn ào, nhưng kiên nhẫn như thứ chắc chắn rằng nó sẽ được tuân theo.",
+            f"{n} {gesture}, ghi lại những thay đổi ở mặt sau một tờ hóa đơn cho đến khi các đường nét tạo thành một câu hỏi.",
+            f"Khi câu hỏi được trả lời, lối thoát xuất hiện sau chiếc cửa duy nhất mà {n} đã sợ mở ra. Đó là lúc {n} hiểu: {g['message']}.",
+        ]
+    elif style == 3:
+        parts = [
+            f"Cuộc gọi đến từ chính số điện thoại của {n}.",
+            f"Đầu dây bên kia là hơi thở, gió, và tiếng vang xa xôi của {place}.",
+            f"Không có giọng nói nào giải thích bất cứ điều gì, nhưng những khoảng lặng lại mang theo {pressure}.",
+            f"{n} {gesture}, nói một câu vào ống nghe mà bấy lâu nay chưa dám thừa nhận.",
+            f"Ở đâu đó gần đây, một chiếc điện thoại reo lên để đáp lại — và lần này {n} bước về phía nó thay vì bước ra xa. Bởi vì {g['message']}.",
+        ]
+    else:
+        parts = [
+            f"{n} đã được cảnh báo không được đếm những ô cửa sổ.",
+            f"Lời cảnh báo đó vô nghĩa cho đến khi những tòa nhà quanh {place} bắt đầu mọc thêm một ô tối mỗi lần {n} nhìn đi chỗ khác.",
+            f"Thứ lớn dần sau lớp kính không phải là một sinh vật, mà là {pressure}.",
+            f"Không còn ai để hỏi, {n} {gesture}, chọn ô cửa sổ phản chiếu một ký ức thay vì một căn phòng.",
+            f"Kính vỡ vào trong, và tiếng ồn đầu tiên của buổi sáng ùa qua như sự tha thứ mang theo những cạnh sắc. {g['message']}.",
+        ]
+
+    return "\n\n".join(parts)
+
+
 def build_fallback_story(request: StoryRequest, language: str) -> str:
     """Build a complete fallback story with varied narrative structures."""
-    g = _theme_guidance(request.theme, language)
-    n, p, s, t = request.name, request.personality, request.setting, request.theme
-    style = RNG.randint(0, 6)
+    if language != "vi":
+        return build_creative_english_fallback(request)
 
-    if language == "vi":
-     if style == 0:
+    return build_creative_vietnamese_fallback(request)
+
+
+
+def _dead_code_fallback(g=None, n="", s="", p="", t="", style=0):
+    """Dead code - never called. Kept to avoid reparse issues."""
+    if style == 0:
          parts = [
           f"Tại {s}, {n} được biết đến là người {p}, nhưng chính điều đó lại khiến mọi người nghĩ {n} sẽ luôn ổn trong mọi hoàn cảnh.",
           f"Biến cố đến khi {g['challenge']} xuất hiện, kéo theo những hiểu lầm và áp lực mà {n} chưa từng chuẩn bị để đối mặt.",
@@ -359,7 +612,7 @@ def build_fallback_story(request: StoryRequest, language: str) -> str:
           f"Trong khoảnh khắc quyết định, {n} bước ra, chấp nhận rủi ro để làm điều đúng đắn và bảo vệ những gì quan trọng.",
           f"Sau tất cả, {n} hiểu sâu sắc rằng {t} không chỉ là lời nói. {g['message']}."
          ]
-     elif style == 1:
+    elif style == 1:
          parts = [
           f"Không có nhiều thời gian để suy nghĩ. Khi {g['challenge']} bùng phát ở {s}, {n} phải hành động ngay.",
           f"Ít ai biết người mang tính cách {p} như {n} cũng đã từng hoài nghi chính mình trước áp lực lớn.",
@@ -367,7 +620,7 @@ def build_fallback_story(request: StoryRequest, language: str) -> str:
           f"Đến lúc mọi thứ tưởng như bế tắc, {n} chọn đối diện sự thật thay vì chạy theo giải pháp dễ dàng.",
           f"Nhìn lại hành trình ấy, {n} hiểu rõ hơn ý nghĩa của {t}: {g['message']}."
          ]
-     elif style == 2:
+    elif style == 2:
          parts = [
           f"Nhiều năm sau, mỗi lần nhắc đến {s}, {n} vẫn nhớ giai đoạn đã thay đổi cách mình nhìn cuộc sống.",
           f"Khi đó, {n} còn nghĩ rằng chỉ cần chăm chỉ là đủ. Nhưng {g['challenge']} cho thấy mọi chuyện phức tạp hơn nhiều.",
@@ -375,7 +628,7 @@ def build_fallback_story(request: StoryRequest, language: str) -> str:
           f"Điều quý giá nhất không phải chiến thắng nhanh, mà là quá trình hiểu bản thân và trưởng thành từng bước.",
           f"Vì vậy với {n}, {t} luôn gắn với một kết luận rõ ràng: {g['message']}."
          ]
-     elif style == 3:
+    elif style == 3:
          parts = [
           f"'Cậu chắc chứ?' là câu hỏi {n} nghe nhiều nhất khi quyết định can thiệp vào chuyện ở {s}.",
           f"Là người {p}, {n} không thích ồn ào, nhưng cũng không thể làm ngơ khi {g['challenge']} ngày một nghiêm trọng.",
@@ -383,7 +636,7 @@ def build_fallback_story(request: StoryRequest, language: str) -> str:
           f"Tuy vậy, mỗi lần chùn bước, {n} lại nhớ lý do ban đầu và tiếp tục hành động bằng những việc cụ thể.",
           f"Đến cuối cùng, chính sự kiên định ấy đã chứng minh rằng {g['message']}."
          ]
-     elif style == 4:
+    elif style == 4:
          parts = [
           f"Có hai con đường trước mắt {n}: một con đường dễ chịu và một con đường đúng đắn.",
           f"Khi {g['challenge']} xảy ra tại {s}, {n} đã thử chọn đường dễ trước, và cái giá phải trả đến rất nhanh.",
@@ -391,7 +644,7 @@ def build_fallback_story(request: StoryRequest, language: str) -> str:
           f"Lần tiếp theo, {n} chọn điều khó hơn, chậm hơn, nhưng phù hợp với giá trị mà {t} đại diện.",
           f"Từ đó, {n} không còn băn khoăn phải chọn gì nữa, vì {g['message']}."
          ]
-     elif style == 5:
+    elif style == 5:
          parts = [
           f"Mọi chuyện ở {s} thay đổi theo từng giai đoạn, và {n} phải học cách thay đổi cùng nó.",
           f"Tuần đầu, {n} nghĩ có thể xử lý nhanh {g['challenge']}. Thực tế thì hoàn toàn ngược lại.",
@@ -399,7 +652,7 @@ def build_fallback_story(request: StoryRequest, language: str) -> str:
           f"Nhờ vậy, {n} dần hiểu rằng phát triển thật sự không đến từ một khoảnh khắc, mà từ sự bền bỉ lâu dài.",
           f"Khi nhìn lại, bài học còn lại rõ ràng: {g['message']}."
          ]
-     else:
+    else:
          parts = [
           f"Khi {g['challenge']} ảnh hưởng cả {s}, đa số chọn đứng ngoài quan sát. {n} thì không.",
           f"Với tính cách {p}, {n} bắt đầu từ những việc nhỏ, nhưng đủ cụ thể để tạo thay đổi thật.",
@@ -407,7 +660,7 @@ def build_fallback_story(request: StoryRequest, language: str) -> str:
           f"Dù vẫn có mâu thuẫn và thất bại, cộng đồng xung quanh {n} đã học được cách phối hợp và tin nhau hơn.",
           f"Câu chuyện ấy để lại một kết luận bền vững về {t}: {g['message']}."
          ]
-     return "\n\n".join(parts)
+    return "\n\n".join(parts)
 
     if style == 0:
      parts = [
@@ -468,6 +721,139 @@ def build_fallback_story(request: StoryRequest, language: str) -> str:
 
     return "\n\n".join(parts)
 
+
+def clean_generated_story(story: str) -> str:
+    """Light cleanup for model output without forcing it into a template."""
+    text = story.strip()
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"^(Story|Truyen|Truyện)\s*:\s*", "", text, flags=re.IGNORECASE)
+
+    stop_markers = [
+        "\nMain character:",
+        "\nPersonality:",
+        "\nSetting:",
+        "\nTheme:",
+        "\nStory:",
+        "\nPrompt:",
+    ]
+    for marker in stop_markers:
+        index = text.find(marker)
+        if index > 0:
+            text = text[:index].strip()
+
+    paragraphs = [part.strip() for part in re.split(r"\n\s*\n", text) if part.strip()]
+    if len(paragraphs) > 7:
+        text = "\n\n".join(paragraphs[:7])
+
+    textbook_pattern = re.compile(
+        r"\b(lesson|objective|glossary|section|question|answer|curriculum|"
+        r"students|definition|exercise|introduction to)\b",
+        flags=re.IGNORECASE,
+    )
+    sentences = re.findall(r"[^.!?]+[.!?]+|[^.!?]+$", text)
+    filtered_sentences = [
+        sentence.strip()
+        for sentence in sentences
+        if sentence.strip() and not textbook_pattern.search(sentence)
+    ]
+    if filtered_sentences:
+        text = " ".join(filtered_sentences)
+
+    return text.strip()
+
+
+def score_story_candidate(story: str, language: str, request: StoryRequest) -> int:
+    """Rank generated candidates by coherence and narrative specificity."""
+    text = clean_generated_story(story)
+    lowered = text.lower()
+    score = 0
+
+    if not text or has_garbled_artifacts(text):
+        return -100
+
+    if request.name.lower() in lowered:
+        score += 25
+    else:
+        score -= 30
+
+    context_hits = 0
+    for source in (request.personality, request.setting, request.theme):
+        tokens = [token for token in re.findall(r"\w+", source.lower()) if len(token) >= 4]
+        if any(token in lowered for token in tokens):
+            context_hits += 1
+    score += context_hits * 12
+
+    for phrase in (request.personality, request.setting, request.theme):
+        normalized_phrase = phrase.strip().lower()
+        if len(normalized_phrase) >= 4:
+            exact_count = lowered.count(normalized_phrase)
+            if exact_count:
+                score -= 6 * exact_count  # Reduced from 10 to allow more natural phrasing
+
+    sentence_count = len(re.findall(r"[.!?]+", text))
+    if 5 <= sentence_count <= 14:
+        score += 20
+    elif sentence_count >= 4:
+        score += 8
+    else:
+        score -= 20
+
+    word_count = len(re.findall(r"\w+", text))
+    if 120 <= word_count <= 320:
+        score += 20
+    elif 80 <= word_count < 120:
+        score += 8
+    else:
+        score -= 10
+
+    action_words = {
+        "found", "ran", "opened", "chose", "left", "returned", "asked", "hid",
+        "followed", "broke", "saved", "crossed", "remembered", "decided",
+        "tìm", "chạy", "mở", "chọn", "rời", "trở", "hỏi", "giấu", "theo",
+        "vỡ", "cứu", "băng", "nhớ", "quyết",
+    }
+    action_hits = sum(1 for word in re.findall(r"\w+", lowered) if word in action_words)
+    score += min(action_hits * 3, 18)
+
+    abstract_words = {
+        "meaningful", "journey", "lesson", "truth", "choice", "responsibility",
+        "ý", "nghĩa", "bài", "học", "hành", "trình", "lựa", "chọn",
+    }
+    abstract_hits = sum(1 for word in re.findall(r"\w+", lowered) if word in abstract_words)
+    if abstract_hits > 8:  # Reduced from 12 to catch moral-essay tone earlier
+        score -= 12
+
+    # Bonus for dialogue (sign of vivid, scene-based writing)
+    dialogue_count = len(re.findall(r'["\u201c\u201d\u2018\u2019]', text))
+    if dialogue_count >= 2:
+        score += 8
+
+    # Bonus for sensory/action verbs beyond the action_words set
+    sensory_words = {
+        "whispered", "glanced", "breathed", "smelled", "shivered", "echoed",
+        "thầm", "nhìn", "thở", "run", "rùng", "vang",
+    }
+    sensory_hits = sum(1 for word in re.findall(r"\w+", lowered) if word in sensory_words)
+    score += min(sensory_hits * 3, 9)
+
+    if PROMPT_LABEL_PATTERN.search(text):
+        score -= 35
+
+    textbook_markers = {
+        "lesson:", "objective:", "glossary:", "section ", "question:", "answer:",
+        "introduction to", "students", "definition", "exercise", "curriculum",
+    }
+    marker_hits = sum(1 for marker in textbook_markers if marker in lowered)
+    score -= marker_hits * 35
+
+    repeated_sentences = re.findall(r"([^.!?]{20,}[.!?])", text)
+    if len(repeated_sentences) != len(set(sentence.strip().lower() for sentence in repeated_sentences)):
+        score -= 20
+
+    if language == "vi" and len(VIETNAMESE_DIACRITIC_PATTERN.findall(text)) == 0:
+        score -= 10
+
+    return score
 
 def validate_input(data: Dict[str, str]) -> bool:
     """Validate input data."""

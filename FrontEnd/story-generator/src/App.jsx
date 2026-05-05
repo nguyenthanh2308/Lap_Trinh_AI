@@ -3,35 +3,48 @@ import './App.css'
 
 function App() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12">
-      {/* Header */}
-      <header className="mb-12">
-        <div className="container mx-auto px-4">
-          <h1 className="text-5xl font-bold text-center text-gray-900 mb-2">
-            ✨ AI Short Story Generator
-          </h1>
-          <p className="text-center text-gray-600 text-lg">
-            Create unique Vietnamese stories powered by artificial intelligence
-          </p>
-        </div>
-      </header>
+    <div className="app-wrapper">
+      {/* Background orbs */}
+      <div className="bg-orb bg-orb-1" />
+      <div className="bg-orb bg-orb-2" />
+      <div className="bg-orb bg-orb-3" />
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 mb-12">
-        <StoryGenerator />
-      </main>
+      {/* Content */}
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100svh', display: 'flex', flexDirection: 'column' }}>
+        <main style={{ flex: 1, padding: '0 16px' }}>
+          <StoryGenerator />
+        </main>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white bg-opacity-50">
-        <div className="container mx-auto px-4 py-8 text-center text-gray-600">
-          <p>
-            Backend API: <code className="bg-gray-100 px-2 py-1 rounded">http://localhost:8000</code>
-          </p>
-          <p className="mt-2 text-sm">
-            Built with React, Vite, Tailwind CSS, and Lucide Icons
-          </p>
-        </div>
-      </footer>
+        {/* Footer */}
+        <footer style={{
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          padding: '20px 24px',
+          textAlign: 'center',
+          color: 'var(--text-faint)',
+          fontSize: '13px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          flexWrap: 'wrap',
+        }}>
+          <span>AI Short Story Generator</span>
+          <span style={{ color: 'rgba(255,255,255,0.1)' }}>·</span>
+          <span>Built with React + FastAPI + GPT-2</span>
+          <span style={{ color: 'rgba(255,255,255,0.1)' }}>·</span>
+          <code style={{
+            background: 'rgba(139,92,246,0.12)',
+            border: '1px solid rgba(139,92,246,0.25)',
+            color: 'var(--violet-light)',
+            padding: '2px 10px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontFamily: 'var(--font-sans)',
+          }}>
+            localhost:8000
+          </code>
+        </footer>
+      </div>
     </div>
   )
 }
