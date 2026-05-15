@@ -173,7 +173,7 @@ def _theme_as_direction(theme: str, language: str) -> str:
             "Show the invisible thread between people through gesture, not declaration."
         ),
         ("hope", "faith", "resilience"): (
-            "Find one tiny detail — a light, a sound, a reflex — that refuses to give up."
+            "Find a tiny detail — a light, a sound, a reflex — that refuses to give up."
         ),
         ("courage", "bravery", "fear"): (
             "Let the character act despite fear — no explanation, just the action."
@@ -202,43 +202,34 @@ def _theme_as_direction(theme: str, language: str) -> str:
 
 def build_prompt(request: StoryRequest, language: str) -> str:
     """
-    Build a prompt based on detected language.
+    Build a GPT-2 compatible prompt.
 
-    The theme is deliberately NOT passed as a labelled field to prevent
-    the model from copying the word into the story. Instead it is translated
-    into a narrative direction so the model embodies the theme through
-    action, imagery, and atmosphere.
+    GPT-2 is a text-completion model — it continues text, NOT follows instructions.
+    The prompt must look like the natural start of a story description.
     """
-    angle = RNG.choice(_VI_STORY_ANGLES if language == "vi" else _EN_STORY_ANGLES)
-    creative = build_creative_direction(request, language)
-    theme_dir = _theme_as_direction(request.theme, language)
+    n = request.name
+    p = request.personality
+    s = request.setting
+    t = request.theme
+    opening = RNG.choice(_VI_STORY_ANGLES if language == "vi" else _EN_STORY_ANGLES)
 
     if language == "vi":
         prompt = (
-            "Viết một truyện ngắn bằng tiếng Việt (khoảng 200-280 từ). "
-            "Truyện không cần theo cấu trúc ba đoạn quen thuộc — "
-            "có thể bắt đầu từ giữa, kể ngược, hoặc tập trung vào một khoảnh khắc duy nhất. "
-            f"{angle} "
-            f"Nhân vật chính: {request.name}, tính cách {request.personality}. "
-            f"Bối cảnh: {request.setting}. "
-            f"{theme_dir}"
-            f"{creative} "
+            f"{n} là người {p}, sống ở {s}. "
+            f"Câu chuyện xoay quanh chủ đề {t}. "
+            f"{opening} "
             "Truyện:"
         )
     else:
         prompt = (
-            "Write a short story in English (about 200-280 words). "
-            "The story does not need a standard three-act shape — "
-            "it may open in the middle, run in reverse, or orbit a single moment. "
-            f"{angle} "
-            f"Main character: {request.name}, personality: {request.personality}. "
-            f"Setting: {request.setting}. "
-            f"{theme_dir}"
-            f"{creative} "
+            f"{n} was a {p} person who lived in {s}. "
+            f"This is a story about {t}. "
+            f"{opening} "
             "Story:"
         )
 
     return prompt
+
 
 
 
